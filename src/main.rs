@@ -1,9 +1,12 @@
+mod categorizer;
+mod scan;
 use clap::{Arg, Command};
-
+use crate::scan::scan_files_in_dir;
+use crate::categorizer::categorize_files;
 fn main() {
     let matches = Command::new("File Organizer")
         .version("1.0")
-        .author("Your Name <your.email@example.com>")
+        .author("CodeMan")
         .about("Organizes files in a directory")
         .arg(
             Arg::new("path")
@@ -30,5 +33,12 @@ fn main() {
     if matches.get_flag("dry-run") {
         println!("This is a dry run. No changes will be made.");
     }
+    let path = "./test_directory";
+    let files = scan_files_in_dir(path);
+    for file in files {
+        println!("{}", file);
+    }
+    let categorized_files = categorize_files(path);
+    println!("{:?}", categorized_files);
 }
 
