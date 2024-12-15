@@ -1,44 +1,37 @@
+mod config;
+mod file_scaner;
 mod categorizer;
-mod scan;
+mod organizer;
+
 use clap::{Arg, Command};
-use crate::scan::scan_files_in_dir;
-use crate::categorizer::categorize_files;
+use config::load_config;
+use organizer::organize_files;
+
 fn main() {
-    let matches = Command::new("File Organizer")
-        .version("1.0")
-        .author("CodeMan")
-        .about("Organizes files in a directory")
-        .arg(
-            Arg::new("path")
-                .short('p')
-                .long("path")
-                .value_name("DIR")
-                .help("Directory path to organize")
-                .num_args(1) // This line ensures the argument expects a value
-                .required(false),  // Makes the argument optional
-        )
-        .arg(
-            Arg::new("dry-run")
-                .short('d')
-                .long("dry-run")
-                .help("Preview changes without organizing")
-                .action(clap::ArgAction::SetTrue),
-        )
+
+    let matches = Command::new("fo")
+        .about("A file organizer CLI tool")
+        .arg(Arg::new("path")
+            .long("path")
+            .help("Path to the directory to organize")
+            .required(true)
+            .value_name("PATH"))
+        .arg(Arg::new("dry-run")
+            .long("dry-run")
+            .help("Run without moving files"))
+        .arg(Arg::new("config")
+            .long("config")
+            .help("Path to the configuration file")
+            .value_name("CONFIG"))
         .get_matches();
+    let path = matches.get_one::<String>("path").expect("Path is required");
+    let dry_run = matches.contains_id("dry-run");
 
-    if let Some(path) = matches.get_one::<String>("path") {
-        println!("Organizing directory: {}", path);
-    }
+    // Fix for config_path
+    let default_config = "config.json".to_string();
+    let config_path = matches.get_one::<String>("config").unwrap_or(&default_config);
 
-    if matches.get_flag("dry-run") {
-        println!("This is a dry run. No changes will be made.");
-    }
-    let path = "./test_directory";
-    let files = scan_files_in_dir(path);
-    for file in files {
-        println!("{}", file);
-    }
-    let categorized_files = categorize_files(path);
-    println!("{:?}", categorized_files);
+    let config = load_config(config_path).expect("Failed to load configuration");
+    organize_files(path, &config, dry_run).expect("Error organizing files");
 }
 

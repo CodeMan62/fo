@@ -1,36 +1,34 @@
-use std::fs;
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
-pub fn categorize_files(path: &str) {
-    let categories = [
-        ("Images", vec!["jpg", "png", "gif", "bmp", "svg"]),
-        ("Documents", vec!["pdf", "docx", "txt", "xlsx"]),
-        ("Videos", vec!["mp4", "avi", "mov", "mkv"]),
-        ("Code", vec!["rs", "py", "js", "ts", "c", "cpp", "java", "go", "php"]),
-    ];
+pub struct FileEntry {
+    pub path: PathBuf,
+    pub category: String,
+}
 
-    let path = Path::new(path);
-    if path.is_dir() {
-        for entry in fs::read_dir(path).expect("Unable to read directory") {
-            if let Ok(entry) = entry {
-                let file_path = entry.path();
-                if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
-                    let mut categorized = false;
-                    for (category, extensions) in &categories {
-                        if extensions.contains(&ext) {
-                            println!("File {:?} categorized as {}", file_path, category);
-                            categorized = true;
-                            break;
+pub fn categorize_files_with_config(files: &[PathBuf], config: &HashMap<String, Vec<String>>) -> Vec<FileEntry> {
+    files
+        .iter()
+        .filter_map(|file| {
+            if let Some(ext) = file.extension() {
+                let category = config
+                    .iter()
+                    .find_map(|(cat, exts)| {
+                        if exts.contains(&ext.to_str().unwrap_or("").to_lowercase()) {
+                            Some(cat.clone())
+                        } else {
+                            None
                         }
-                    }
-                    if !categorized {
-                        println!("File {:?} categorized as Others", file_path);
-                    }
-                }
+                    })
+                    .unwrap_or_else(|| "Others".to_string());
+                Some(FileEntry {
+                    path: file.clone(),
+                    category,
+                })
+            } else {
+                None
             }
-        }
-    } else {
-        println!("Provided path is not a directory.");
-    }
+        })
+        .collect()
 }
 
